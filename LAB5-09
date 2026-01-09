@@ -1,0 +1,41 @@
+import gym
+import numpy as np
+from stable_baselines3 import TRPO
+from stable_baselines3.common.envs import DummyEnv
+
+# Custom Smart Grid Environment
+class SmartGridEnv(gym.Env):
+    def __init__(self):
+        super(SmartGridEnv, self).__init__()
+        self.action_space = gym.spaces.Box(low=0, high=1, shape=(3,))
+        self.observation_space = gym.spaces.Box(low=0, high=100, shape=(3,))
+        self.state = np.array([50, 30, 40])  # demand, renewable, battery
+
+    def step(self, action):
+        demand, renewable, battery = self.state
+        supply = renewable + battery * action[1] + action[2] * 50
+        cost = action[2] * 10  # grid cost
+        penalty = max(0, demand - supply) * 20
+        reward = -(cost + penalty)
+
+        self.state = np.random.randint(20, 80, size=3)
+        done = False
+        return self.state, reward, done, {}
+
+    def reset(self):
+        self.state = np.array([50, 30, 40])
+        return self.state
+
+# Environment
+env = SmartGridEnv()
+
+# TRPO Model
+model = TRPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=10000)
+
+# Test the model
+obs = env.reset()
+for _ in range(5):
+    action, _ = model.predict(obs)
+    obs, reward, done, _ = env.step(action)
+    print("Action:", action, "Reward:", reward)
