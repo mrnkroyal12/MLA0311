@@ -1,0 +1,39 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+np.random.seed(42)
+
+prices = np.linspace(5, 50, 100)               # Price range
+demand = 200 - 3 * prices + np.random.normal(0, 10, 100)
+
+data = pd.DataFrame({
+    "Price": prices,
+    "Demand": demand
+})
+
+X = data[["Price"]]
+y = data["Demand"]
+
+demand_model = LinearRegression()
+demand_model.fit(X, y)
+def expected_revenue(price):
+    predicted_demand = demand_model.predict([[price]])[0]
+    predicted_demand = max(predicted_demand, 0)  # Avoid negative demand
+    return price * predicted_demand
+
+price_space = np.linspace(5, 50, 100)
+revenues = [expected_revenue(p) for p in price_space]
+
+optimal_price = price_space[np.argmax(revenues)]
+maximum_revenue = max(revenues)
+print("Optimal Price:", round(optimal_price, 2))
+print("Maximum Expected Revenue:", round(maximum_revenue, 2))
+
+plt.figure()
+plt.plot(price_space, revenues)
+plt.axvline(optimal_price, linestyle='--')
+plt.xlabel("Price")
+plt.ylabel("Expected Revenue")
+plt.title("Model-Based Reinforcement Learning for Dynamic Pricing")
+plt.show()
