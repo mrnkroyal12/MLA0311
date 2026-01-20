@@ -1,0 +1,62 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+grid_size = 5
+num_agents = 3
+episodes = 200
+actions = [(0,0),(1,0),(-1,0),(0,1),(0,-1)]
+q_tables = [np.zeros((grid_size,grid_size,grid_size,grid_size,len(actions))) for _ in range(num_agents)]
+
+def reset():
+    agents = [np.array([random.randint(0,4),random.randint(0,4)]) for _ in range(num_agents)]
+    target = np.array([4,4])
+    return agents,target
+
+def step(agent_pos, action):
+    new_pos = agent_pos + np.array(action)
+    return np.clip(new_pos,0,grid_size-1)
+
+rewards_log = []
+
+for ep in range(episodes):
+    agents,target = reset()
+    total_reward = 0
+
+    for t in range(30):
+        actions_idx = []
+        for i in range(num_agents):
+            x,y = agents[i]
+            tx,ty = target
+            if random.random() < 0.2:
+                a = random.randint(0,len(actions)-1)
+            else:
+                a = np.argmax(q_tables[i][x,y,tx,ty])
+            actions_idx.append(a)
+
+        new_agents = []
+        for i in range(num_agents):
+            new_agents.append(step(agents[i],actions[actions_idx[i]]))
+
+        distances = [np.linalg.norm(new_agents[i]-target) for i in range(num_agents)]
+        reward = -sum(distances)
+
+        if all((new_agents[i]==target).all() for i in range(num_agents)):
+            reward += 50
+
+        for i in range(num_agents):
+            x,y = agents[i]
+            tx,ty = target
+            nx,ny = new_agents[i]
+            q_tables[i][x,y,tx,ty,actions_idx[i]] += 0.1 * (reward + 0.9 * np.max(q_tables[i][nx,ny,tx,ty]) - q_tables[i][x,y,tx,ty,actions_idx[i]])
+
+        agents = new_agents
+        total_reward += reward
+
+    rewards_log.append(total_reward)
+
+plt.plot(rewards_log)
+plt.xlabel("Episode")
+plt.ylabel("Team Reward")
+plt.title("Multi-Agent Cooperative Learning Performance")
+plt.show()
